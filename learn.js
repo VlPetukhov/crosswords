@@ -22,7 +22,6 @@
         "shift": "move very slightly",
         "stiff": "incapable of or resistant to bending",
         "tantrum": "a display of bad temper",
-        "tell off": "reprimand",
         "throne": "the chair of state for a monarch, bishop, etc.",
         "weed": "any plant that crowds out cultivated plants",
         "zoom": "the act of rising upward into the air",
@@ -242,16 +241,16 @@
     };
 
     CrosswordGenerator.prototype.generate = function () {
-        var wordsStat = [];
+        var wordsStat = {};
         var globalLettersStat = {};
 
-        for (var word in this.wordsSet) {
-            if (!this.wordsSet.hasOwnProperty(word)) {
+        for (var wordIndex in this.wordsSet) {
+            if (!this.wordsSet.hasOwnProperty(wordIndex)) {
                 continue;
             }
 
             var localLettersStat = {};
-            var wordLetters = word.split('');
+            var wordLetters = this.wordsSet[wordIndex].split('');
 
             for (var index in wordLetters) {
                 if (undefined !== localLettersStat[wordLetters[index]]) {
@@ -265,18 +264,47 @@
                 } else {
                     globalLettersStat[wordLetters[index]] = 1;
                 }
-
-                console.log('Word', word, localLettersStat);
             }
 
-            console.log('Global', globalLettersStat);
+            console.log('Word', this.wordsSet[wordIndex], localLettersStat);
+            wordsStat[this.wordsSet[wordIndex]] = localLettersStat;
         }
 
-        word = null;
+        console.log('Global', globalLettersStat);
+
+        var wordsRatio = {};
+
+        for (var word in wordsStat) {
+            var ratio = 0;
+
+            for (var letter in globalLettersStat) {
+                if (Object.keys(wordsStat[word]).indexOf(letter) < 0) {
+                    continue;
+                }
+
+                ratio += wordsStat[word][letter];
+            }
+
+            console.log(word);
+            ratio += word.length;
+            wordsRatio[word] = ratio;
+        }
+        console.log(wordsRatio);
     };
 
 
-    for (var i = 1; i < 20; i++) {
+    var words = [];
+    var wordsList = Object.keys(wordSet);
 
+    for (var i = 1; i < 20; i++) {
+        do {
+            var word = wordsList[wordsList.length * Math.random() << 0];
+        } while (!words.indexOf(word) < 0);
+        words.push(word);
     }
+
+
+
+    console.log(words);
+    window.cg = new CrosswordGenerator(words);
 })();
