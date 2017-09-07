@@ -114,7 +114,6 @@
         "canoe": "a small, light boat propelled with a paddle",
         "catapult": "an engine providing medieval artillery used during sieges",
         "ferry": "a boat transporting people or vehicles over a body of water",
-        "freak out": "lose one's nerve",
         "hollow": "not solid; having a space or gap or cavity",
         "fuss": "an excited state of agitation",
         "kneel": "rest one's weight on one's knees",
@@ -155,7 +154,6 @@
         "triumph": "a successful ending of a struggle or contest",
         "acquaintance": "personal knowledge or information about someone or something",
         "agitated": "physically disturbed or set in motion",
-        "break out": "begin suddenly and sometimes violently",
         "burgle": "enter and rob a dwelling",
         "candlestick": "a holder with sockets for candles",
         "crow": "a black bird having a raucous call",
@@ -209,7 +207,6 @@
 
     CrosswordGenerator.prototype = Object.create({});
     CrosswordGenerator.prototype.constructor = CrosswordGenerator;
-
     CrosswordGenerator.prototype.__checkWordSet = function(wordsSet) {
         if (!(typeof wordsSet === 'object')) {
             return false;
@@ -239,10 +236,10 @@
     CrosswordGenerator.prototype.getWordsSet = function () {
         return Object.create(this.wordsSet);
     };
-
-    CrosswordGenerator.prototype.generate = function () {
+    CrosswordGenerator.prototype.__wordsLettersStat = function () {
         var wordsStat = {};
         var globalLettersStat = {};
+        var index = 0;
 
         for (var wordIndex in this.wordsSet) {
             if (!this.wordsSet.hasOwnProperty(wordIndex)) {
@@ -252,7 +249,7 @@
             var localLettersStat = {};
             var wordLetters = this.wordsSet[wordIndex].split('');
 
-            for (var index in wordLetters) {
+            for (index in wordLetters) {
                 if (undefined !== localLettersStat[wordLetters[index]]) {
                     localLettersStat[wordLetters[index]]++;
                 } else {
@@ -266,30 +263,132 @@
                 }
             }
 
-            console.log('Word', this.wordsSet[wordIndex], localLettersStat);
             wordsStat[this.wordsSet[wordIndex]] = localLettersStat;
         }
 
-        console.log('Global', globalLettersStat);
+        return {
+            words: wordsStat,
+            global: globalLettersStat
+        };
+    };
+    CrosswordGenerator.prototype.__getWordsRating = function (letterStat) {
+        console.log(letterStat);
+        var wordsRating = [];
 
-        var wordsRatio = {};
+        for (var wordIndex in this.wordsSet) {
+            if (!this.wordsSet.hasOwnProperty(wordIndex)) {
+                continue;
+            }
 
-        for (var word in wordsStat) {
-            var ratio = 0;
+            var wordLength = this.wordsSet[wordIndex].length;
+            var wordRating = wordLength;
+            var letterIndex = 0;
 
-            for (var letter in globalLettersStat) {
-                if (Object.keys(wordsStat[word]).indexOf(letter) < 0) {
+            for (var letter in letterStat.global) {
+                if (Object.keys(letterStat.words[this.wordsSet[wordIndex]]).indexOf(letter) < 0) {
                     continue;
                 }
 
-                ratio += wordsStat[word][letter];
+                wordRating += Math.round(letterStat.global[letter] * Math.sqrt(
+                    Math.abs(1 - (letterIndex - wordLength/2)/wordLength))
+                );
+                letterIndex++;
             }
 
-            console.log(word);
-            ratio += word.length;
-            wordsRatio[word] = ratio;
+            wordsRating.push({
+                word: this.wordsSet[wordIndex],
+                rating: wordRating
+            });
         }
-        console.log(wordsRatio);
+
+        wordsRating.sort(function (a, b) {
+            if (a.rating < b.rating) {
+                return 1;
+            }
+
+            if (a.rating > b.rating) {
+                return -1;
+            }
+
+            return 0;
+        });
+
+        return wordsRating;
+    };
+    CrosswordGenerator.prototype.__getWordsTerminators = function () {
+        var terminators = {};
+
+        for (var wordIndex in this.wordsSet) {
+            if (!this.wordsSet.hasOwnProperty(wordIndex)) {
+                continue;
+            }
+
+            var word = this.wordsSet[wordIndex];
+            var wordTerminators = [];
+
+            for (var innerWordIndex in this.wordsSet) {
+                if ((this.wordsSet[innerWordIndex].indexOf(word[0]) >= 0 ||
+                    this.wordsSet[innerWordIndex].indexOf(word[word.length - 1]) >= 0) &&
+                    this.wordsSet[innerWordIndex] !== word
+                ) {
+                    wordTerminators.push(this.wordsSet[innerWordIndex]);
+                }
+            }
+            terminators[word] = wordTerminators;
+        }
+
+        return terminators;
+    };
+    CrosswordGenerator.prototype.__getWordsIntersections = function () {
+        var intersections = {};
+
+        for (var wordIndex in this.wordsSet) {
+            if (!this.wordsSet.hasOwnProperty(wordIndex)) {
+                continue;
+            }
+
+            var word = this.wordsSet[wordIndex];
+            var wordLetters = word.split('');
+            var wordIntersections = [];
+
+            for (var innerWordIndex in this.wordsSet) {
+                if (!this.wordsSet.hasOwnProperty(innerWordIndex)) {
+                    continue;
+                }
+
+                var innerWord = this.wordsSet[innerWordIndex];
+                var innerWordLetters = innerWord.split('');
+
+                for (var letterIndex in innerWordLetters) {
+                    if (!innerWordLetters.hasOwnProperty(letterIndex)) {
+                        continue;
+                    }
+
+                    if (wordLetters.indexOf(innerWordLetters[letterIndex]) >= 0 &&
+                        innerWord !== word
+                    ) {
+                        wordIntersections.push(innerWord);
+                    }
+                }
+
+
+            }
+            intersections[word] = wordIntersections;
+        }
+
+        return intersections;
+    };
+
+    CrosswordGenerator.prototype.generate = function () {
+        var letterStat = this.__wordsLettersStat();
+        var wordsRating = this.__getWordsRating(letterStat);
+        var wordsTerminators = this.__getWordsTerminators();
+        var wordsIntersections = this.__getWordsIntersections();
+
+
+        console.log('wordsRating', wordsRating);
+        console.log('wordsTerminators', wordsTerminators);
+        console.log('wordsIntersections', wordsIntersections);
     };
 
 
@@ -303,8 +402,7 @@
         words.push(word);
     }
 
-
-
     console.log(words);
     window.cg = new CrosswordGenerator(words);
+    window.cg.generate();
 })();
